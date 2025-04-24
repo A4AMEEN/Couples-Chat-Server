@@ -27,18 +27,38 @@ const __dirname = path.dirname(__filename)
 
 const app = express()
 const server = http.createServer(app)
+// Update both Socket.io and CORS middleware to match:
+const allowedOrigins = [
+  "https://couples-chat-app.vercel.app",
+  "https://belleamee.vercel.app",
+  "https://mest.google.com" // Add this if you need to allow this domain
+];
+
 const io = new Server(server, {
   cors: {
-    origin: process.env.NODE_ENV === "production" ? false : ["http://localhost:4200"],
+    origin: allowedOrigins,
     credentials: true,
+    methods: ["GET", "POST"]
   },
-})
+});
+
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
+}));
 
 // Set up VAPID keys for web push
 webpush.setVapidDetails("mailto:your-email@example.com", process.env.VAPID_PUBLIC_KEY, process.env.VAPID_PRIVATE_KEY)
 
 // Middleware
-app.use(cors())
+// app.use(cors({
+//   origin: ["https://couples-chat-app.vercel.app", "https://belleamee.vercel.app/"],
+//   credentials: true,
+//   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+//   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
+// }))
 app.use(express.json({ limit: "50mb" }))
 app.use(express.urlencoded({ extended: true, limit: "50mb" }))
 
@@ -52,6 +72,9 @@ app.use("/api/auth", authRoutes)
 app.use("/api/messages", messageRoutes)
 app.use("/api/users", userRoutes)
 app.use("/api/notifications", notificationRoutes)
+app.get("/api/test", (req, res) => {
+  res.status(200).json({ message: "API is working! 🎉" })
+})
 
 // Socket.io middleware for authentication
 io.use((socket, next) => {
